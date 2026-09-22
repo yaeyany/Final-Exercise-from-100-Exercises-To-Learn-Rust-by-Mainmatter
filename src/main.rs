@@ -2,6 +2,8 @@ use axum::Router;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
+mod tickets;
+mod database;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
