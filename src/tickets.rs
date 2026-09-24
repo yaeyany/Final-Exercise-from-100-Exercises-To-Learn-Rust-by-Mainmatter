@@ -1,6 +1,8 @@
-use crate::{errors::{TicketPriorityError, TicketStatusError, TicketTitleError}, helpers::sanitize_string};
+use sqlx::Row;
 
+use crate::{errors::{TicketDescriptionError, TicketIdError, TicketPriorityError, TicketStatusError, TicketTitleError}, helpers::sanitize_string};
 
+// ── Types ──────────────────────────────────────────────────
 #[derive(Debug, PartialEq, Eq)]
 pub struct Ticket {
     id: TicketId,
@@ -29,6 +31,22 @@ pub enum TicketStatus {
     Completed,
 }
 
+// ── Traits ──────────────────────────────────────────────────
+
+// ── TicketId traits ──────────────────────────────────────────────────
+impl TryFrom<i64> for TicketId {
+    type Error = TicketIdError;
+
+    fn try_from(value: i64) -> Result<Self, Self::Error> {
+        if value <= 0 {
+            Err(TicketIdError::Invalid)
+        } else {
+            Ok(TicketId(value))
+        }
+    }
+}
+
+// ── TicketTitle traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketTitle {
     type Error = TicketTitleError;
     
@@ -51,6 +69,28 @@ impl TryFrom<String> for TicketTitle {
     }
 }
 
+// ── TicketDescription traits ──────────────────────────────────────────────────
+impl TryFrom<&str> for TicketDescription {
+    type Error = TicketDescriptionError;
+    
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        if value.len() > 100 {
+            Err(TicketDescriptionError::TooLong)
+        } else {
+            Ok(TicketDescription(value.to_string()))
+        }
+    }
+}
+
+impl TryFrom<String> for TicketDescription {
+    type Error = TicketDescriptionError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.as_str().try_into()
+    }
+}
+
+// ── TicketPriority traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketPriority {
     type Error = TicketPriorityError;
     
@@ -73,6 +113,7 @@ impl TryFrom<String> for TicketPriority {
     }
 }
 
+// ── TicketStatus traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketStatus {
     type Error = TicketStatusError;
 
@@ -96,18 +137,29 @@ impl TryFrom<String> for TicketStatus {
 
 }
 
-//Ticket methods
-impl Ticket {
-    //New ticket constructor
-    pub fn new(id: TicketId, title: TicketTitle, description: Option<TicketDescription>) -> Self {
-        Self {
-            id,
-            title,
-            description,
-            priority: TicketPriority::Medium,
-            status: TicketStatus::New,
-        }
+// ── Methods ──────────────────────────────────────────────────
+
+// ── TicketTitle methods ──────────────────────────────────────────────────
+impl TicketTitle {
+    pub fn into_inner(self) -> String {
+        self.0
     }
+}
+// ── TicketDescription methods ──────────────────────────────────────────────────
+impl TicketDescription {
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+}
+// ── TicketId methods ──────────────────────────────────────────────────
+impl TicketId {
+    pub fn into_inner(self) -> i64 {
+        self.0
+    }
+}
+
+// ── Ticket methods ──────────────────────────────────────────────────
+impl Ticket {
     //Change ticket state
     pub fn toggle_state(&mut self, status: TicketStatus) {
         self.status = status;
@@ -127,6 +179,22 @@ impl Ticket {
     //Get ticket id
     pub fn get_id(&self) -> TicketId {
         self.id
+    }
+    //Make from parts
+    pub fn from_parts(
+        id: TicketId,
+        title: TicketTitle,
+        description: Option<TicketDescription>,
+        priority: TicketPriority,
+        status: TicketStatus,
+    ) -> Self {
+        Self {
+            id,
+            title,
+            description,
+            priority,
+            status,
+        }
     }
 }
 

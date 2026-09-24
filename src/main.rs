@@ -2,6 +2,8 @@ use axum::Router;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
+use crate::database::TicketsDB;
+
 mod tickets;
 mod database;
 mod errors;
@@ -14,7 +16,7 @@ async fn main() -> anyhow::Result<()> {
     
     let database_url = std::env::var("DATABASE_URL")?;
 
-    let pool = sqlx::PgPool::connect(&database_url).await?;    
+    let pool = TicketsDB::new(&database_url).await?;    
     
     let app = Router::new();
     
@@ -30,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let row = sqlx::query!("SELECT 1 as number")
-        .fetch_one(&pool)
+        .fetch_one(pool.database())
         .await?;
 
     println!("PostgreSQL returned: {}", row.number.unwrap());
