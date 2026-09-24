@@ -4,20 +4,37 @@ use tokio::net::TcpListener;
 
 mod tickets;
 mod database;
+mod errors;
+mod helpers;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+
+    dotenvy::dotenv().ok();
+    
+    let database_url = std::env::var("DATABASE_URL")?;
+
+    let pool = sqlx::PgPool::connect(&database_url).await?;    
     
     let app = Router::new();
     
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let listener = TcpListener::bind(addr).await?;
 
-    axum::serve(
-        listener, 
-        app.into_make_service()
-    )
-    .await?;
+    let server = tokio::spawn(async move {
+        axum::serve(
+            listener, 
+            app.into_make_service()
+        )
+        .await.unwrap();
+    });
 
+    let row = sqlx::query!("SELECT 1 as number")
+        .fetch_one(&pool)
+        .await?;
+
+    println!("PostgreSQL returned: {}", row.number.unwrap());
+
+    server.await?;
     Ok(())
 }
