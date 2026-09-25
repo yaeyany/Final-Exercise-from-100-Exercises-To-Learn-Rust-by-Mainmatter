@@ -1,8 +1,6 @@
-use sqlx::Row;
-
 use crate::{errors::{TicketDescriptionError, TicketIdError, TicketPriorityError, TicketStatusError, TicketTitleError}, helpers::sanitize_string};
 
-// ── Types ──────────────────────────────────────────────────
+// Types ──────────────────────────────────────────────────
 #[derive(Debug, PartialEq, Eq)]
 pub struct Ticket {
     id: TicketId,
@@ -16,24 +14,24 @@ pub struct Ticket {
 pub struct TicketId(i64);
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TicketTitle(String);
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TicketDescription(String);
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TicketPriority {
     Low,
     Medium,
     High,
 }
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TicketStatus {
     New,
     InProgress,
     Completed,
 }
 
-// ── Traits ──────────────────────────────────────────────────
+// Traits ──────────────────────────────────────────────────
 
-// ── TicketId traits ──────────────────────────────────────────────────
+// TicketId traits ──────────────────────────────────────────────────
 impl TryFrom<i64> for TicketId {
     type Error = TicketIdError;
 
@@ -46,7 +44,7 @@ impl TryFrom<i64> for TicketId {
     }
 }
 
-// ── TicketTitle traits ──────────────────────────────────────────────────
+// TicketTitle traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketTitle {
     type Error = TicketTitleError;
     
@@ -69,7 +67,7 @@ impl TryFrom<String> for TicketTitle {
     }
 }
 
-// ── TicketDescription traits ──────────────────────────────────────────────────
+// TicketDescription traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketDescription {
     type Error = TicketDescriptionError;
     
@@ -90,7 +88,7 @@ impl TryFrom<String> for TicketDescription {
     }
 }
 
-// ── TicketPriority traits ──────────────────────────────────────────────────
+// TicketPriority traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketPriority {
     type Error = TicketPriorityError;
     
@@ -113,7 +111,7 @@ impl TryFrom<String> for TicketPriority {
     }
 }
 
-// ── TicketStatus traits ──────────────────────────────────────────────────
+// TicketStatus traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketStatus {
     type Error = TicketStatusError;
 
@@ -137,49 +135,49 @@ impl TryFrom<String> for TicketStatus {
 
 }
 
-// ── Methods ──────────────────────────────────────────────────
+// Methods ──────────────────────────────────────────────────
 
-// ── TicketTitle methods ──────────────────────────────────────────────────
+// TicketTitle methods ──────────────────────────────────────────────────
 impl TicketTitle {
     pub fn into_inner(self) -> String {
         self.0
     }
 }
-// ── TicketDescription methods ──────────────────────────────────────────────────
+// TicketDescription methods ──────────────────────────────────────────────────
 impl TicketDescription {
     pub fn into_inner(self) -> String {
         self.0
     }
 }
-// ── TicketId methods ──────────────────────────────────────────────────
+// TicketId methods ──────────────────────────────────────────────────
 impl TicketId {
     pub fn into_inner(self) -> i64 {
         self.0
     }
 }
+// TicketPriority methods ──────────────────────────────────────────────────
+impl TicketPriority {
+    pub fn into_inner(self) -> String {
+        match self {
+            TicketPriority::Low => "low".to_string(),
+            TicketPriority::Medium => "medium".to_string(),
+            TicketPriority::High => "high".to_string(),
+        }
+    }
+}
+// TicketStatus methods ──────────────────────────────────────────────────
+impl TicketStatus {
+    pub fn into_inner(self) -> String {
+        match self {
+            TicketStatus::New => "new".to_string(),
+            TicketStatus::InProgress => "in progress".to_string(),
+            TicketStatus::Completed => "completed".to_string(),
+        }
+    }
+}
 
-// ── Ticket methods ──────────────────────────────────────────────────
+// Ticket methods ──────────────────────────────────────────────────
 impl Ticket {
-    //Change ticket state
-    pub fn toggle_state(&mut self, status: TicketStatus) {
-        self.status = status;
-    }
-    //Change ticket priority
-    pub fn toggle_priority(&mut self, priority: TicketPriority) {
-        self.priority = priority;
-    }
-    //Change ticket title
-    pub fn edit_title(&mut self, new_title: TicketTitle) {
-        self.title = new_title;
-    }
-    //Change ticket description
-    pub fn edit_description(&mut self, new_description: TicketDescription) {
-        self.description = Some(new_description);
-    }
-    //Get ticket id
-    pub fn get_id(&self) -> TicketId {
-        self.id
-    }
     //Make from parts
     pub fn from_parts(
         id: TicketId,
@@ -196,14 +194,17 @@ impl Ticket {
             status,
         }
     }
+    //Get ticket parts
+    pub fn get_self_parts(self) -> (TicketId, TicketTitle, Option<TicketDescription>, TicketPriority, TicketStatus) {
+        (self.id, self.title, self.description, self.priority, self.status)
+    }
 }
-
 #[cfg(test)]
 mod tests {
 
     use crate::{tickets::*, errors::*};
 
-    // ── TicketTitle tests ───────────────────────────────────────────────
+    // TicketTitle tests ───────────────────────────────────────────────
     #[test]
     fn test_ticket_title_valid() {
         let title = TicketTitle::try_from("Hello").unwrap();
@@ -229,7 +230,7 @@ mod tests {
         assert_eq!(title.0, "World");
     }
 
-    // ── TicketPriority tests ───────────────────────────────────────────────
+    // TicketPriority tests ───────────────────────────────────────────────
     #[test]
     fn test_ticket_priority_valid() {
         let p = TicketPriority::try_from("low").unwrap();
@@ -254,7 +255,7 @@ mod tests {
         assert_eq!(p, TicketPriority::High);
     }
 
-    // ── TicketStatus tests ──────────────────────────────────────────────────
+    // TicketStatus tests ──────────────────────────────────────────────────
     #[test]
     fn test_ticket_status_valid() {
         let s = TicketStatus::try_from("new").unwrap();
