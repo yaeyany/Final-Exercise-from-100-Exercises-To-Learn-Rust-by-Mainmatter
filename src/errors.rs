@@ -1,33 +1,21 @@
-
+// Custom Ticket errors ──────────────────────────────────────────────────
 #[derive(Debug, thiserror::Error, PartialEq)]
-pub enum TicketIdError {
+pub enum TicketError {
     #[error("Ticket ID invalid. Can only be more than 0")]
-    Invalid,
-}
+    IdInvalid,
 
-#[derive(Debug, thiserror::Error, PartialEq)]
-pub enum TicketTitleError {
     #[error("Title cannot be empty")]
-    Empty,
+    TitleEmpty,
 
     #[error("Title is too long. Max 50 characters")]
-    TooLong,
-}
+    TitleTooLong,
 
-#[derive(Debug, thiserror::Error, PartialEq)]
-pub enum TicketDescriptionError {
     #[error("Description is too long. Max 100 characters")]
-    TooLong,
-}
+    DescriptionTooLong,
 
-#[derive(Debug, thiserror::Error, PartialEq)]
-pub enum TicketPriorityError {
-    #[error("Please eneter a valid priority")]
-    Invalid,
-}
+    #[error("Please enter a valid priority")]
+    PriorityInvalid,
 
-#[derive(Debug, thiserror::Error, PartialEq)]
-pub enum TicketStatusError {
     #[error("Please enter a valid status")]
-    Invalid,
+    StatusInvalid,
 }

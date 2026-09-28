@@ -33,3 +33,6 @@ async fn main() -> anyhow::Result<()> {
     server.await?;
     Ok(())
 }
+
+// Copy paste example for comments ──────────────────────────────────────────────────
+//  ──────────────────────────────────────────────────

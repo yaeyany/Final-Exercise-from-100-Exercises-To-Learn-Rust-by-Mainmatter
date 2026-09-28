@@ -1,4 +1,4 @@
-use crate::{errors::{TicketDescriptionError, TicketIdError, TicketPriorityError, TicketStatusError, TicketTitleError}, helpers::sanitize_string};
+use crate::{errors::TicketError::{self, *}, helpers::sanitize_string};
 
 // Types ──────────────────────────────────────────────────
 #[derive(Debug, PartialEq, Eq)]
@@ -33,11 +33,11 @@ pub enum TicketStatus {
 
 // TicketId traits ──────────────────────────────────────────────────
 impl TryFrom<i64> for TicketId {
-    type Error = TicketIdError;
+    type Error = TicketError;
 
     fn try_from(value: i64) -> Result<Self, Self::Error> {
         if value <= 0 {
-            Err(TicketIdError::Invalid)
+            Err(IdInvalid)
         } else {
             Ok(TicketId(value))
         }
@@ -46,13 +46,13 @@ impl TryFrom<i64> for TicketId {
 
 // TicketTitle traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketTitle {
-    type Error = TicketTitleError;
+    type Error = TicketError;
     
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if value.is_empty() {
-            Err(TicketTitleError::Empty)
+            Err(TitleEmpty)
         } else if value.len() > 50 {
-            Err(TicketTitleError::TooLong)
+            Err(TitleTooLong)
         } else {
             Ok(TicketTitle(value.to_string()))
         }
@@ -60,7 +60,7 @@ impl TryFrom<&str> for TicketTitle {
 }
 
 impl TryFrom<String> for TicketTitle {
-    type Error = TicketTitleError;
+    type Error = TicketError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
@@ -69,11 +69,11 @@ impl TryFrom<String> for TicketTitle {
 
 // TicketDescription traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketDescription {
-    type Error = TicketDescriptionError;
+    type Error = TicketError;
     
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if value.len() > 100 {
-            Err(TicketDescriptionError::TooLong)
+            Err(DescriptionTooLong)
         } else {
             Ok(TicketDescription(value.to_string()))
         }
@@ -81,7 +81,7 @@ impl TryFrom<&str> for TicketDescription {
 }
 
 impl TryFrom<String> for TicketDescription {
-    type Error = TicketDescriptionError;
+    type Error = TicketError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
@@ -90,7 +90,7 @@ impl TryFrom<String> for TicketDescription {
 
 // TicketPriority traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketPriority {
-    type Error = TicketPriorityError;
+    type Error = TicketError;
     
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value = sanitize_string(value);
@@ -98,13 +98,13 @@ impl TryFrom<&str> for TicketPriority {
             "low" => Ok(TicketPriority::Low),
             "medium" => Ok(TicketPriority::Medium),
             "high" => Ok(TicketPriority::High),
-            _ => Err(TicketPriorityError::Invalid),
+            _ => Err(PriorityInvalid),
         }
     }
 }
 
 impl TryFrom<String> for TicketPriority {
-    type Error = TicketPriorityError;
+    type Error = TicketError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
@@ -113,7 +113,7 @@ impl TryFrom<String> for TicketPriority {
 
 // TicketStatus traits ──────────────────────────────────────────────────
 impl TryFrom<&str> for TicketStatus {
-    type Error = TicketStatusError;
+    type Error = TicketError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let value = sanitize_string(value);
@@ -121,13 +121,13 @@ impl TryFrom<&str> for TicketStatus {
             "new" => Ok(TicketStatus::New),
             "in progress" => Ok(TicketStatus::InProgress),
             "completed" => Ok(TicketStatus::Completed),
-            _ => Err(TicketStatusError::Invalid),
+            _ => Err(StatusInvalid),
         }
     }
 }
 
 impl TryFrom<String> for TicketStatus {
-    type Error = TicketStatusError;
+    type Error = TicketError;
     
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.as_str().try_into()
@@ -178,6 +178,7 @@ impl TicketStatus {
 
 // Ticket methods ──────────────────────────────────────────────────
 impl Ticket {
+
     //Make from parts
     pub fn from_parts(
         id: TicketId,
@@ -194,7 +195,8 @@ impl Ticket {
             status,
         }
     }
-    //Get ticket parts
+    
+    //Get ticket parts ──────────────────────────────────────────────────
     pub fn get_self_parts(self) -> (TicketId, TicketTitle, Option<TicketDescription>, TicketPriority, TicketStatus) {
         (self.id, self.title, self.description, self.priority, self.status)
     }
@@ -202,7 +204,7 @@ impl Ticket {
 #[cfg(test)]
 mod tests {
 
-    use crate::{tickets::*, errors::*};
+    use crate::{tickets::*};
 
     // TicketTitle tests ───────────────────────────────────────────────
     #[test]
@@ -214,14 +216,14 @@ mod tests {
     #[test]
     fn test_ticket_title_empty() {
         let err = TicketTitle::try_from("").unwrap_err();
-        assert_eq!(err, TicketTitleError::Empty);
+        assert_eq!(err, TitleEmpty);
     }
 
     #[test]
     fn test_ticket_title_too_long() {
         let long = "a".repeat(51);
         let err = TicketTitle::try_from(long.as_str()).unwrap_err();
-        assert_eq!(err, TicketTitleError::TooLong);
+        assert_eq!(err, TitleTooLong);
     }
 
     #[test]
@@ -246,7 +248,7 @@ mod tests {
     #[test]
     fn test_ticket_priority_invalid() {
         let err = TicketPriority::try_from("invalid").unwrap_err();
-        assert_eq!(err, TicketPriorityError::Invalid);
+        assert_eq!(err, PriorityInvalid);
     }
 
     #[test]
@@ -271,7 +273,7 @@ mod tests {
     #[test]
     fn test_ticket_status_invalid() {
         let err = TicketStatus::try_from("invalid").unwrap_err();
-        assert_eq!(err, TicketStatusError::Invalid);
+        assert_eq!(err, StatusInvalid);
     }
 
     #[test]
