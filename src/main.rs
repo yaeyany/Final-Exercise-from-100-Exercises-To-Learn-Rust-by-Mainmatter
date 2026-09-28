@@ -8,6 +8,7 @@ mod tickets;
 mod database;
 mod errors;
 mod helpers;
+mod router;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
