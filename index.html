@@ -2,19 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My First Webpage</title>
+    <title>The tickets</title>
 </head>
 <body>
-    <h1>Welcome to My Website</h1>
-    <h1>Main Topic</h1>
-    <h2>Subheading</h2>
-    <p>This is a normal paragraph.</p>
-    <p>This is <b>where</b> the <i>visible</i> content goes.</p>
-    <a href="https://www.google.com">Visit Google</a>
-    <p>Here's a list of items:</p>
-    <p><img src="logo.png" alt="Company Logo" width="200"></p>
-<!-- This is a comment and won't show up on the website -->
-<!-- • <strong> or <b>: Makes text bold. -->
-<!-- • <em> or <i>: Makes text italicized. -->
+    <h1>The tickets</h1>
+    <h2>Add a ticket</h2>
+
+    <form id="ticket-form">
+        <label for="title">Ticket title (required)</label><br>
+        <input id="title" name="title" required><br><br>
+
+        <label for="description">Ticket description</label><br>
+        <textarea id="description" name="description"></textarea><br><br>
+
+        <button type="submit">Create ticket</button>
+    </form>
+
+    <p id="result"></p>
+
+    <script>
+        const form = document.getElementById("ticket-form");
+        const result = document.getElementById("result");
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const title = form.elements.title.value;
+            const description = form.elements.description.value || null;
+
+            try {
+                const response = await fetch("/tickets", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ title, description })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Request failed");
+                }
+
+                result.textContent =
+                    `Created ticket #${data.id}: ${data.title}: ${data.description ?? "No description"}`;
+
+                form.reset();
+
+            } catch (error) {
+                result.textContent = error.message;
+            }
+        });
+    </script>
 </body>
 </html>
