@@ -1,4 +1,3 @@
-use anyhow::Ok;
 use sqlx::PgPool;
 
 use crate::tickets::*;

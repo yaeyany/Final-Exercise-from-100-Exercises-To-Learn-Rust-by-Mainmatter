@@ -63,7 +63,7 @@
         const prioritySelect = document.getElementById("priority");
 
         async function loadTickets() {
-            const response = await fetch("/ticket/list");
+            const response = await fetch("/api/ticket/list");
 
             if (!response.ok) {
                 throw new Error("Failed to load tickets");

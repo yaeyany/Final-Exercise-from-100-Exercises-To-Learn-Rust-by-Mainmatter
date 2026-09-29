@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{errors::TicketError::{self, *}, helpers::sanitize_string};
 
 // Types ──────────────────────────────────────────────────
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Ticket {
     id: TicketId,
     title: TicketTitle,
@@ -10,21 +12,28 @@ pub struct Ticket {
     status: TicketStatus,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize)]
 pub struct TicketId(i64);
-#[derive(Debug, PartialEq, Eq, Clone)]
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct TicketTitle(String);
-#[derive(Debug, PartialEq, Eq, Clone)]
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct TicketDescription(String);
-#[derive(Debug, PartialEq, Eq, Clone)]
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum TicketPriority {
     Low,
     Medium,
     High,
 }
-#[derive(Debug, PartialEq, Eq, Clone)]
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum TicketStatus {
     New,
+    #[serde(rename = "in progress")] // <-- This tells Serde to output "in progress" with a space
     InProgress,
     Completed,
 }

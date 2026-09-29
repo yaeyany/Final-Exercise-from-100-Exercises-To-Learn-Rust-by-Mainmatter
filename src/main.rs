@@ -21,10 +21,13 @@ async fn main() -> anyhow::Result<()> {
     let database_url = std::env::var("DATABASE_URL")?;
     let pool = TicketsDB::new(&database_url).await?;    
     
-    let app = Router::new();
+    // Call your router function and pass the database pool here
+    let app = router::router(pool);
     
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let listener = TcpListener::bind(addr).await?;
+
+    println!("Server running on http://127.0.0.1:3000/ticket/create");
 
     let server = tokio::spawn(async move {
         axum::serve(

@@ -1,7 +1,5 @@
-use axum::{extract::State, response::{Html, Redirect}};
+use axum::{Json, extract::{Path, State}, response::{Html, Redirect}};
 use serde::Deserialize;
-use axum::Json;
-
 use crate::{database::TicketsDB, errors::AppError, tickets::{Ticket, TicketDescription, TicketId, TicketPriority, TicketStatus, TicketTitle}};
 
 // Ticket create struct ──────────────────────────────────────────────────
@@ -14,11 +12,10 @@ pub struct RequestTicketCreate {
 // Ticket patch struct ──────────────────────────────────────────────────
 #[derive(Deserialize)]
 pub struct RequestTicketPatch {
-    id: i64,
     title: String,
     description: Option<String>,
     priority: String,
-    status: String
+    status: String,
 }
 
 // Ticket creation validation Json -> TicketTitle and TicketDescription ──────────────────────────────────────────────────
@@ -38,8 +35,7 @@ fn validate_ticket_request(
 // Ticket patch validation Json -> Ticket struct fields ──────────────────────────────────────────────────
 fn validate_patch_request(
     request: RequestTicketPatch,
-) -> Result<(TicketId, TicketTitle, Option<TicketDescription>, TicketPriority, TicketStatus), anyhow::Error> {
-    let id= request.id.try_into()?;
+) -> Result<(TicketTitle, Option<TicketDescription>, TicketPriority, TicketStatus), anyhow::Error> {
     let title = request.title.try_into()?;
 
     let description = request
@@ -50,7 +46,7 @@ fn validate_patch_request(
     let priority = request.priority.try_into()?;
     let status = request.status.try_into()?;
 
-    Ok((id, title, description, priority, status))
+    Ok((title, description, priority, status))
 }
 
 // Creating a ticket ──────────────────────────────────────────────────
@@ -77,24 +73,35 @@ pub async fn list_tickets(
 // Patch a ticket ──────────────────────────────────────────────────
 pub async fn patch_ticket(
     State(tickets): State<TicketsDB>,
+    Path(id): Path<i64>, // Extract id from URL
     Json(request): Json<RequestTicketPatch>,
 ) -> Result<(), AppError> {
-    let (id, title, description, priority, status) = validate_patch_request(request)?;
-    tickets.patch_ticket(id, title, description, priority, status).await?;
+    let ticket_id = id.try_into()?;
+    let title = request.title.try_into()?;
+    let description = request
+        .description
+        .map(TicketDescription::try_from)
+        .transpose()?;
+    let priority = request.priority.try_into()?;
+    let status = request.status.try_into()?;
+
+    tickets.patch_ticket(ticket_id, title, description, priority, status).await?;
     Ok(())
 }
 
 // Checking for an html file ──────────────────────────────────────────────────
-pub async fn index_handler(path: &str) -> Html<String> {
+pub async fn html_handler(path: &str) -> Html<String> {
     match tokio::fs::read_to_string(path).await {
         Ok(content) => Html(content),
-        Err(_) => Html(format!("<h1>500 Internal Server Error</h1><p>{} not found.</p>", path).to_string()),
+        Err(_) => Html(format!(
+            "<h1>500 Internal Server Error</h1><p>Critical error: HTML file '<strong>{}</strong>' not found on disk.</p>",
+            path
+        )),
     }
 }
-
 // Redirect to home ──────────────────────────────────────────────────
-async fn redirect_to_home() -> Redirect {
-    Redirect::temporary("/")
+pub async fn redirect_to_home() -> Redirect {
+    Redirect::temporary("/ticket/create")
 }
 
 

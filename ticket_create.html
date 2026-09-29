@@ -31,7 +31,8 @@
             const description = form.elements.description.value || null;
 
             try {
-                const response = await fetch("/tickets", {
+                // 1. Fixed route to match backend (/ticket/create)
+                const response = await fetch("/ticket/create", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -39,14 +40,16 @@
                     body: JSON.stringify({ title, description })
                 });
 
-                const data = await response.json();
-
                 if (!response.ok) {
-                    throw new Error(data.error || "Request failed");
+                    throw new Error("Failed to create ticket");
                 }
 
-                result.textContent =
-                    `Created ticket #${data.id}: ${data.title}: ${data.description ?? "No description"}`;
+                // 2. The backend returns just the ID number
+                const ticketId = await response.json();
+
+                // 3. Use local variables for title/description since backend only returns ID
+                result.textContent = 
+                    `Created ticket #${ticketId}: ${title}: ${description ?? "No description"}`;
 
                 form.reset();
 
