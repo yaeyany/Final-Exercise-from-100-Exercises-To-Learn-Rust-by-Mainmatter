@@ -1,3 +1,6 @@
+// Copy paste example for comments ──────────────────────────────────────────────────
+//  ──────────────────────────────────────────────────
+
 use axum::Router;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -8,6 +11,7 @@ mod tickets;
 mod database;
 mod errors;
 mod helpers;
+mod handlers;
 mod router;
 
 #[tokio::main]
@@ -33,6 +37,3 @@ async fn main() -> anyhow::Result<()> {
     server.await?;
     Ok(())
 }
-
-// Copy paste example for comments ──────────────────────────────────────────────────
-//  ──────────────────────────────────────────────────

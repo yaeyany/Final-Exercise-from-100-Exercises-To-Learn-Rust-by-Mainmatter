@@ -1,9 +1,10 @@
 use anyhow::Ok;
-use sqlx::{PgPool, QueryBuilder};
+use sqlx::PgPool;
 
 use crate::tickets::*;
 
 // DB Struct ──────────────────────────────────────────────────
+#[derive(Clone)]
 pub struct TicketsDB {
     database: PgPool
 }
@@ -24,7 +25,7 @@ impl TicketsDB {
         &self.database
     }
 
-    // dd a ticket to the database ──────────────────────────────────────────────────
+    // Add a ticket to the database ──────────────────────────────────────────────────
     pub async fn add_ticket(
         &self,
         title: TicketTitle,
@@ -47,8 +48,12 @@ impl TicketsDB {
     }
 
     // Retrieve ticket details and convert into a ticket ──────────────────────────────────────────────────
-    pub async fn get_ticket(&self, ticket_id: TicketId) -> Result<Ticket, anyhow::Error> {
+    pub async fn get_ticket(
+        &self,
+        ticket_id: TicketId,
+    ) -> Result<Ticket, anyhow::Error> {
         let id = ticket_id.into_inner();
+
         let row = sqlx::query!(
             "SELECT * FROM tickets WHERE id = $1",
             id
@@ -65,67 +70,68 @@ impl TicketsDB {
             row.priority.try_into()?,
             row.status.try_into()?,
         );
+
         Ok(ticket)
     }
 
-    //Patch a ticket
-    pub async fn patch_ticket(&self, ticket_id: TicketId, title: Option<TicketTitle>, description: Option<TicketDescription>, priority: Option<TicketPriority>, status: Option<TicketStatus>) -> Result<(), anyhow::Error> {
-        
-        // Start building an sql query to update the ticket
-        let mut query = QueryBuilder::new("UPDATE tickets SET ");
-        let mut first = true;
-        
-        // Title
-        if let Some(title) = title {
-            if !first {
-                query.push(", ");
-            }
-            first = false;
+    // Retrieve tickets ──────────────────────────────────────────────────
+    pub async fn get_tickets(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<Ticket>, anyhow::Error> {
+        let rows = sqlx::query!(
+            "SELECT * FROM tickets ORDER BY id LIMIT $1",
+            limit
+        )
+        .fetch_all(&self.database)
+        .await?;
 
-            query.push("title = ");
-            query.push_bind(title.into_inner());
-        }
+        let tickets = rows
+            .into_iter()
+            .map(|row| {
+                Ok(Ticket::from_parts(
+                    row.id.try_into()?,
+                    row.title.try_into()?,
+                    row.description
+                        .map(|d| d.try_into())
+                        .transpose()?,
+                    row.priority.try_into()?,
+                    row.status.try_into()?,
+                ))
+            })
+            .collect::<Result<Vec<Ticket>, anyhow::Error>>()?;
 
-        // Description
-        if let Some(description) = description {
-            if !first {
-                query.push(", ");
-            }
-            first = false;
+        Ok(tickets)
+    }
 
-            query.push("description = ");
-            query.push_bind(description.into_inner());
-        }
+    // Patch a ticket ──────────────────────────────────────────────────
+    pub async fn patch_ticket(
+        &self,
+        id: TicketId,
+        title: TicketTitle,
+        description: Option<TicketDescription>,
+        priority: TicketPriority,
+        status: TicketStatus,
+    ) -> Result<(), anyhow::Error> {
+        sqlx::query!(
+            r#"
+            UPDATE tickets
+            SET
+                title = $1,
+                description = $2,
+                priority = $3,
+                status = $4
+            WHERE id = $5
+            "#,
+            title.into_inner(),
+            description.map(TicketDescription::into_inner),
+            priority.into_inner(),
+            status.into_inner(),
+            id.into_inner(),
+        )
+        .execute(&self.database)
+        .await?;
 
-        // Priority
-        if let Some(priority) = priority {
-            if !first {
-                query.push(", ");
-            }
-            first = false;
-
-            query.push("priority = ");
-            query.push_bind(priority.into_inner());
-        }
-
-        // Status
-        if let Some(status) = status {
-            if !first {
-                query.push(", ");
-            }
-
-            query.push("status = ");
-            query.push_bind(status.into_inner());
-        }
-
-        // Insert ticket id
-        query.push(" WHERE id = ");
-        query.push_bind(ticket_id.into_inner());
-
-        // Execute sql query
-        query.build()
-            .execute(&self.database)
-            .await?;
         Ok(())
     }
 }
@@ -177,7 +183,7 @@ mod tests {
         let description = Some(TicketDescription::try_from("Test adjusted description").unwrap());
         let priority = TicketPriority::try_from("low").unwrap();
         let status = TicketStatus::try_from("completed").unwrap();
-        db.patch_ticket(id, Some(title.clone()), description.clone(), Some(priority.clone()), Some(status.clone())).await.unwrap();
+        db.patch_ticket(id, title.clone(), description.clone(), priority.clone(), status.clone()).await.unwrap();
 
         // Testing the changes
         let ticket = db.get_ticket(id).await.unwrap();

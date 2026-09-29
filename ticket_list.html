@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tickets</title>
+</head>
+<body>
+    <h1>Tickets</h1>
+
+    <label for="ticket-select">Select a ticket</label>
+    <br>
+
+    <select id="ticket-select">
+        <option value="">-- Select a ticket --</option>
+    </select>
+
+    <h2>Ticket details</h2>
+
+    <form id="ticket-form">
+        <label for="title">Title</label>
+        <br>
+        <input id="title" name="title" required>
+        <br><br>
+
+        <label for="description">Description</label>
+        <br>
+        <textarea id="description" name="description"></textarea>
+        <br><br>
+
+        <label for="status">Status</label>
+        <br>
+        <select id="status" name="status">
+            <option value="new">New</option>
+            <option value="in progress">In progress</option>
+            <option value="completed">Completed</option>
+        </select>
+        <br><br>
+
+        <label for="priority">Priority</label>
+        <br>
+        <select id="priority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select>
+        <br><br>
+
+        <button type="submit">Update ticket</button>
+    </form>
+
+    <p id="result"></p>
+
+    <script>
+        let tickets = [];
+
+        const ticketSelect = document.getElementById("ticket-select");
+        const form = document.getElementById("ticket-form");
+        const result = document.getElementById("result");
+
+        const titleInput = document.getElementById("title");
+        const descriptionInput = document.getElementById("description");
+        const statusSelect = document.getElementById("status");
+        const prioritySelect = document.getElementById("priority");
+
+        async function loadTickets() {
+            const response = await fetch("/ticket/list");
+
+            if (!response.ok) {
+                throw new Error("Failed to load tickets");
+            }
+
+            tickets = await response.json();
+
+            ticketSelect.innerHTML =
+                '<option value="">-- Select a ticket --</option>';
+
+            tickets.forEach(ticket => {
+                const option = document.createElement("option");
+
+                option.value = ticket.id;
+                option.textContent = `#${ticket.id} — ${ticket.title}`;
+
+                ticketSelect.appendChild(option);
+            });
+        }
+
+        ticketSelect.addEventListener("change", () => {
+            const ticket = tickets.find(
+                ticket => ticket.id == ticketSelect.value
+            );
+
+            if (!ticket) {
+                return;
+            }
+
+            titleInput.value = ticket.title;
+            descriptionInput.value = ticket.description ?? "";
+            statusSelect.value = ticket.status;
+            prioritySelect.value = ticket.priority;
+        });
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const ticketId = ticketSelect.value;
+
+            if (!ticketId) {
+                result.textContent = "Please select a ticket";
+                return;
+            }
+
+            const ticket = {
+                title: titleInput.value,
+                description: descriptionInput.value || null,
+                status: statusSelect.value,
+                priority: prioritySelect.value
+            };
+
+            try {
+                const response = await fetch(`/ticket/${ticketId}`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(ticket)
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to update ticket");
+                }
+
+                result.textContent = "Ticket updated successfully";
+
+                await loadTickets();
+                ticketSelect.value = ticketId;
+
+            } catch (error) {
+                result.textContent = error.message;
+            }
+        });
+
+        loadTickets().catch(error => {
+            result.textContent = error.message;
+        });
+    </script>
+</body>
+</html>
+
