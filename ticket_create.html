@@ -1,64 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>The tickets</title>
-</head>
-<body>
-    <h1>The tickets</h1>
-    <h2>Add a ticket</h2>
+    
+    <head>
+        <meta charset="UTF-8">
+        <title>Create ticket</title>
+        <link rel="stylesheet" href="/style.css">
+    </head>
 
-    <form id="ticket-form">
-        <label for="title">Ticket title (required)</label><br>
-        <input id="title" name="title" required><br><br>
+    <body>
+        <div class="page">
 
-        <label for="description">Ticket description</label><br>
-        <textarea id="description" name="description"></textarea><br><br>
+            <div class="header">
+                <h1>Tickets</h1>
+                <a class="create-link" href="/ticket/list">
+                    List tickets
+                </a>
+            </div>
 
-        <button type="submit">Create ticket</button>
-    </form>
-    <br>
-    <a href="/ticket/list">List tickets</a>
+            <h2>Add a ticket</h2>
 
-    <p id="result"></p>
+            <form id="ticket-form" class="ticket-form">
 
-    <script>
-        const form = document.getElementById("ticket-form");
-        const result = document.getElementById("result");
+                <div class="field">
+                    <label for="title">Ticket title (required)</label>
+                    <input id="title" name="title" required>
+                </div>
 
-        form.addEventListener("submit", async (event) => {
-            event.preventDefault();
+                <div class="field">
+                    <label for="description">Ticket description</label>
+                    <textarea id="description" name="description"></textarea>
+                </div>
 
-            const title = form.elements.title.value;
-            const description = form.elements.description.value || null;
+                <div class="actions">
+                    <button type="submit">Create ticket</button>
+                </div>
 
-            try {
-                // 1. Fixed route to match backend (/ticket/create)
-                const response = await fetch("/ticket/create", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ title, description })
-                });
+            </form>
 
-                if (!response.ok) {
-                    throw new Error("Failed to create ticket");
+            <p id="result"></p>
+
+        </div>
+
+        <script>
+            const form = document.getElementById("ticket-form");
+            const result = document.getElementById("result");
+
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const title = form.elements.title.value;
+                const description = form.elements.description.value || null;
+
+                try {
+                    // 1. Fixed route to match backend (/ticket/create)
+                    const response = await fetch("/ticket/create", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ title, description })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error("Failed to create ticket");
+                    }
+
+                    // 2. The backend returns just the ID number
+                    const ticketId = await response.json();
+
+                    // 3. Use local variables for title/description since backend only returns ID
+                    result.textContent = 
+                        `Created ticket #${ticketId}: ${title}: ${description ?? "No description"}`;
+
+                    form.reset();
+
+                } catch (error) {
+                    result.textContent = error.message;
                 }
-
-                // 2. The backend returns just the ID number
-                const ticketId = await response.json();
-
-                // 3. Use local variables for title/description since backend only returns ID
-                result.textContent = 
-                    `Created ticket #${ticketId}: ${title}: ${description ?? "No description"}`;
-
-                form.reset();
-
-            } catch (error) {
-                result.textContent = error.message;
-            }
-        });
-    </script>
-</body>
+            });
+        </script>
+    </body>
 </html>

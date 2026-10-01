@@ -1,6 +1,5 @@
 use axum::{
-    Router,
-    routing::{get, patch},
+    Router, http::header, routing::{get, patch},
 };
 
 use crate::database::TicketsDB;
@@ -8,6 +7,11 @@ use crate::handlers::*;
 
 pub fn router(tickets: TicketsDB) -> Router {
     Router::new()
+        .route("/style.css", get(|| async {
+        (
+            [(header::CONTENT_TYPE, "text/css")],
+            include_str!("../style.css"),
+        )}))
         .nest("/ticket", ticket_router())
         .route("/api/ticket/list", get(handler_ticket_list))
         .fallback(get(redirect_to_home))

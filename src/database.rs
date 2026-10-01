@@ -122,3 +122,19 @@ impl TicketsDB {
         Ok(deleted.is_some())
     }
 }
+
+// Clean the DB after tests ──────────────────────────────────────────────────
+
+#[sqlx::test]
+async fn truncate_tickets() -> Result<(), anyhow::Error> {
+    
+    dotenvy::dotenv().ok();
+    let database_url = std::env::var("DATABASE_URL")?;
+    let pool = TicketsDB::new(&database_url).await?;    
+
+    sqlx::query("TRUNCATE TABLE tickets RESTART IDENTITY")
+        .execute(&pool.database)
+        .await?;
+
+    Ok(())
+}

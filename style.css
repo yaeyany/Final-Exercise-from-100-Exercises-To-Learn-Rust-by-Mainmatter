@@ -1,0 +1,123 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+}
+
+.page {
+    max-width: 1100px;
+    margin: 40px auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    margin: 0;
+}
+
+.create-link {
+    padding: 12px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.create-link:hover {
+    background-color: #0056b3;
+}
+
+.content {
+    display: flex;
+    gap: 80px;
+    align-items: flex-start;
+}
+
+.ticket-form {
+    width: 400px;
+}
+
+.field {
+    margin-bottom: 18px;
+}
+
+.field label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+
+.field input,
+.field textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 9px;
+    font-size: 15px;
+}
+
+.field textarea {
+    height: 120px;
+    resize: vertical;
+}
+
+.select-row {
+    display: flex;
+    gap: 15px;
+}
+
+.select-row .field {
+    flex: 1;
+}
+
+.select-row select {
+    width: 100%;
+    padding: 9px;
+    font-size: 15px;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.actions button {
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+table {
+    border-collapse: collapse;
+    width: 600px;
+}
+
+th,
+td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+th button {
+    border: none;
+    background: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+tbody tr {
+    cursor: pointer;
+}
+
+tbody tr:hover {
+    background-color: #f5f5f5;
+}
