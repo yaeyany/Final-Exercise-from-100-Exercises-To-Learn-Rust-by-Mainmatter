@@ -7,53 +7,60 @@
 <body>
     <h1>Tickets</h1>
 
-    <label for="ticket-select">Select a ticket</label>
-    <br>
-
-    <select id="ticket-select">
-        <option value="">-- Select a ticket --</option>
-    </select>
-
     <h2>Ticket details</h2>
 
-    <form id="ticket-form">
-        <label for="title">Title</label>
-        <br>
-        <input id="title" name="title" required>
-        <br><br>
+    <div style="display: flex; gap: 30px;">
 
-        <label for="description">Description</label>
-        <br>
-        <textarea id="description" name="description"></textarea>
-        <br><br>
+        <form id="ticket-form">
+            <label for="title">Title</label>
+            <br>
+            <input id="title" name="title" required>
+            <br><br>
 
-        <label for="status">Status</label>
-        <br>
-        <select id="status" name="status">
-            <option value="new">New</option>
-            <option value="in progress">In progress</option>
-            <option value="completed">Completed</option>
-        </select>
-        <br><br>
+            <label for="description">Description</label>
+            <br>
+            <textarea id="description" name="description"></textarea>
+            <br><br>
 
-        <label for="priority">Priority</label>
-        <br>
-        <select id="priority" name="priority">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-        </select>
-        <br><br>
+            <label for="status">Status</label>
+            <br>
+            <select id="status" name="status" required>
+                <option value="">-- Select status --</option>
+                <option value="new">New</option>
+                <option value="in progress">In progress</option>
+                <option value="completed">Completed</option>
+            </select>
+            <br><br>
 
-        <button type="submit">Update ticket</button>
-    </form>
+            <label for="priority">Priority</label>
+            <br>
+            <select id="priority" name="priority" required>
+                <option value="">-- Select priority --</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+            <br><br>
+
+            <button type="submit">Update ticket</button>
+            <br>
+            <button type="button" id="delete-button">Delete ticket</button>
+        </form>
+
+        <div>
+            <label for="ticket-list">Select a ticket</label>
+            <div id="ticket-list"></div>
+        </div>
+    </div>
+    <br>
+    <a href="/ticket/create">Create a ticket</a>
 
     <p id="result"></p>
 
     <script>
         let tickets = [];
-
-        const ticketSelect = document.getElementById("ticket-select");
+        
+        const ticketList = document.getElementById("ticket-list");
         const form = document.getElementById("ticket-form");
         const result = document.getElementById("result");
 
@@ -62,8 +69,12 @@
         const statusSelect = document.getElementById("status");
         const prioritySelect = document.getElementById("priority");
 
+        const deleteButton = document.getElementById("delete-button");
+
         async function loadTickets() {
             const response = await fetch("/api/ticket/list");
+
+            ticketList.innerHTML = "";
 
             if (!response.ok) {
                 throw new Error("Failed to load tickets");
@@ -71,38 +82,64 @@
 
             tickets = await response.json();
 
-            ticketSelect.innerHTML =
-                '<option value="">-- Select a ticket --</option>';
-
             tickets.forEach(ticket => {
-                const option = document.createElement("option");
+                const button = document.createElement("button");
+                button.textContent = `#${ticket.id} — ${ticket.title}`;
+                button.type = "button";
 
-                option.value = ticket.id;
-                option.textContent = `#${ticket.id} — ${ticket.title}`;
+                button.addEventListener("click", () => {
+                    titleInput.value = ticket.title;
+                    descriptionInput.value = ticket.description ?? "";
+                    statusSelect.value = ticket.status;
+                    prioritySelect.value = ticket.priority;
 
-                ticketSelect.appendChild(option);
+                    ticketList.querySelectorAll("button").forEach(btn => {
+                        btn.style.fontWeight = "normal";
+                    });
+
+                    button.style.fontWeight = "bold";
+                    ticketList.dataset.selectedId = ticket.id;
+                });
+
+                ticketList.appendChild(button);
+                ticketList.appendChild(document.createElement("br"));
             });
+
+            if (tickets.length > 0) {
+                ticketList.querySelector("button").click();
+            }
         }
 
-        ticketSelect.addEventListener("change", () => {
-            const ticket = tickets.find(
-                ticket => ticket.id == ticketSelect.value
-            );
+        deleteButton.addEventListener("click", async () => {
+            const ticketId = ticketList.dataset.selectedId;
 
-            if (!ticket) {
+            if (!ticketId) {
+                result.textContent = "Please select a ticket";
                 return;
             }
 
-            titleInput.value = ticket.title;
-            descriptionInput.value = ticket.description ?? "";
-            statusSelect.value = ticket.status;
-            prioritySelect.value = ticket.priority;
+            try {
+                const response = await fetch(`/ticket/${ticketId}`, {
+                    method: "DELETE"
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to delete ticket");
+                }
+
+                result.textContent = "Ticket deleted successfully";
+                delete ticketList.dataset.selectedId;
+                form.reset();
+                await loadTickets();
+            } catch (error) {
+                result.textContent = error.message;
+            }
         });
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            const ticketId = ticketSelect.value;
+            const ticketId = ticketList.dataset.selectedId;
 
             if (!ticketId) {
                 result.textContent = "Please select a ticket";
@@ -132,7 +169,7 @@
                 result.textContent = "Ticket updated successfully";
 
                 await loadTickets();
-                ticketSelect.value = ticketId;
+                ticketList.dataset.selectedId = ticketId;
 
             } catch (error) {
                 result.textContent = error.message;

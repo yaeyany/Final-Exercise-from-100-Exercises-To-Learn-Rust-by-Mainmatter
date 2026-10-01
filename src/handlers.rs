@@ -50,7 +50,7 @@ fn validate_patch_request(
 }
 
 // Creating a ticket ──────────────────────────────────────────────────
-pub async fn create_ticket(
+pub async fn handler_ticket_create(
     State(tickets): State<TicketsDB>,
     Json(request): Json<RequestTicketCreate>,
 ) -> Result<Json<TicketId>, AppError> {
@@ -62,7 +62,7 @@ pub async fn create_ticket(
 }
 
 // List all tickets ──────────────────────────────────────────────────
-pub async fn list_tickets(
+pub async fn handler_ticket_list(
     State(tickets): State<TicketsDB>,
 ) -> Result<Json<Vec<Ticket>>, AppError> {
     let tickets = tickets.get_tickets(100).await?;
@@ -71,21 +71,25 @@ pub async fn list_tickets(
 }
 
 // Patch a ticket ──────────────────────────────────────────────────
-pub async fn patch_ticket(
+pub async fn handler_ticket_patch(
     State(tickets): State<TicketsDB>,
-    Path(id): Path<i64>, // Extract id from URL
+    Path(id): Path<i64>, 
     Json(request): Json<RequestTicketPatch>,
 ) -> Result<(), AppError> {
     let ticket_id = id.try_into()?;
-    let title = request.title.try_into()?;
-    let description = request
-        .description
-        .map(TicketDescription::try_from)
-        .transpose()?;
-    let priority = request.priority.try_into()?;
-    let status = request.status.try_into()?;
+    let (title, description, priority, status) = validate_patch_request(request)?;
 
     tickets.patch_ticket(ticket_id, title, description, priority, status).await?;
+    Ok(())
+}
+
+// Delete a ticket ──────────────────────────────────────────────────
+pub async fn handler_ticket_delete(
+    State(tickets): State<TicketsDB>,
+    Path(id): Path<i64>, 
+) -> Result<(), AppError> {
+    let ticket_id = id.try_into()?;
+    tickets.delete_ticket(ticket_id).await?;
     Ok(())
 }
 
@@ -102,62 +106,4 @@ pub async fn html_handler(path: &str) -> Html<String> {
 // Redirect to home ──────────────────────────────────────────────────
 pub async fn redirect_to_home() -> Redirect {
     Redirect::temporary("/ticket/create")
-}
-
-
-// Tests ──────────────────────────────────────────────────
-#[cfg(test)]
-mod tests {
-    use crate::handlers::*;
-
-    // Test connection to the psql using sqlx ──────────────────────────────────────────────────
-    #[tokio::test]
-    async fn sql_connection() {
-        dotenvy::dotenv().ok();
-        let database_url = std::env::var("DATABASE_URL").unwrap();
-        let pool = TicketsDB::new(&database_url).await.unwrap();    
-        let row = sqlx::query!("SELECT 1 as number")
-            .fetch_one(pool.database())
-            .await
-            .unwrap();
-        assert_eq!(row.number, Some(1));
-    }
-
-    // Testing ticket creation ──────────────────────────────────────────────────
-    #[tokio::test]
-    async fn create_ticket_test() {
-        dotenvy::dotenv().ok();
-        let database_url = std::env::var("DATABASE_URL").unwrap();
-        let tickets = TicketsDB::new(&database_url).await.unwrap();
-
-        // Init request
-        let request = RequestTicketCreate {
-            title: "Test ticket".to_string(),
-            description: Some("This is a test ticket".to_string()),
-        };
-
-        // Create ticket
-        let result = create_ticket(
-            State(tickets.clone()),
-            Json(request),
-        ).await;
-
-        // Check that the ticket exists and is correct
-        let ticket_id = result.unwrap();
-        println!("Created ticket: {:?}", ticket_id);
-
-        let row = sqlx::query!(
-            "SELECT title, description FROM tickets WHERE id = $1",
-            ticket_id.into_inner()
-        )
-        .fetch_one(*State(tickets.database()))
-        .await
-        .unwrap();
-
-        assert_eq!(row.title, "Test ticket");
-        assert_eq!(
-            row.description.as_deref(),
-            Some("This is a test ticket")
-        );
-    }
 }

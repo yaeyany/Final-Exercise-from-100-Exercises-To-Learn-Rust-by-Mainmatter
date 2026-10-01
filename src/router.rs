@@ -1,23 +1,29 @@
 use axum::{
-    Router, routing::{get, patch, post},
+    Router,
+    routing::{get, patch},
 };
 
-use crate::handlers::*;
-
 use crate::database::TicketsDB;
+use crate::handlers::*;
 
 pub fn router(tickets: TicketsDB) -> Router {
     Router::new()
-        // 1. The HTML page route
-        .route("/ticket/list", get(|| html_handler("ticket_list.html")))
-        
-        // 2. The JSON API routes (renamed slightly or kept separate)
-        .route("/ticket/create", 
-            get(|| html_handler("ticket_create.html"))
-            .post(create_ticket)
-        )
-        .route("/api/ticket/list", get(list_tickets)) // <-- JSON endpoint
-        .route("/ticket/{id}", patch(patch_ticket))
-        
+        .nest("/ticket", ticket_router())
+        .route("/api/ticket/list", get(handler_ticket_list))
+        .fallback(get(redirect_to_home))
         .with_state(tickets)
+}
+
+pub fn ticket_router() -> Router<TicketsDB> {
+    Router::new()
+        .route("/list", get(|| { html_handler("ticket_list.html")}))
+        .route(
+            "/create",
+            get(|| { html_handler("ticket_create.html")})
+                .post(handler_ticket_create),
+        )
+        .route("/{id}", 
+            patch(handler_ticket_patch)
+            .get(redirect_to_home)
+            .delete(handler_ticket_delete))
 }

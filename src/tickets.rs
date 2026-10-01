@@ -204,11 +204,6 @@ impl Ticket {
             status,
         }
     }
-    
-    //Get ticket parts ──────────────────────────────────────────────────
-    pub fn get_self_parts(self) -> (TicketId, TicketTitle, Option<TicketDescription>, TicketPriority, TicketStatus) {
-        (self.id, self.title, self.description, self.priority, self.status)
-    }
 }
 #[cfg(test)]
 mod tests {

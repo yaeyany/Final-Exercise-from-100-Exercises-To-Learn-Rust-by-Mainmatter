@@ -1,7 +1,6 @@
 // Copy paste example for comments ──────────────────────────────────────────────────
 //  ──────────────────────────────────────────────────
 
-use axum::Router;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
